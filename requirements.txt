@@ -1,26 +1,27 @@
-selenium==4.13.0  # Updated to the latest version
-webdriver-manager==3.8.6
-pandas==2.0.3
-beautifulsoup4==4.12.2
-requests==2.31.0
-lxml==4.9.3
-tqdm==4.66.1
-python-dotenv==1.0.0
+selenium  # Updated to the latest version
+webdriver-manager
+pandas
+beautifulsoup4
+requests
+lxml
+tqdm
+python-dotenv
 
 # Type checking
-mypy==1.5.1
-types-requests==2.31.0.1
-types-beautifulsoup4==4.12.0.5
-pandas-stubs==2.0.3.230814
+mypy
+types-requests
+types-beautifulsoup4
+pandas-stubs
 pandas-stubs
 
 # Testing
-pytest==7.4.0
-pytest-cov==4.1.0
-pytest-mock==3.11.1
-pytest-selenium==4.0.1
-tox==4.11.3
+pytest
+pytest-cov
+pytest-mock
+pytest-selenium
+tox
 
 # Code quality
-black==23.7.0
-isort==5.12.0
+black
+isort
+numpy  # Updated to a version compatible with pandas-stubs

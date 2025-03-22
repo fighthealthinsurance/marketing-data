@@ -30,7 +30,7 @@ class UHCProviderScraper(BaseScraper):
         """Initialize the UHC scraper with provider-specific settings."""
         self.provider_name = "uhc"
         super().__init__(headless)
-        self.base_url = "https://connect.werally.com/provider-search/uhc"
+        self.base_url = "https://www.uhc.com/find-a-doctor"
         self.output_dir = f"data/{self.provider_name}"
 
     def scrape(
@@ -59,10 +59,16 @@ class UHCProviderScraper(BaseScraper):
             # Navigate to the UHC provider search page
             self.driver.get(self.base_url)
 
-            # Wait for page to load
-            self.wait.until(EC.presence_of_element_located((By.ID, "search-form")))
+            # Select search as guest
+            self._search_as_guest()
 
-            # Select mental health/behavioral health specialty
+            # Select behavioral health directory
+            self._select_behavioral_health_directory()
+
+            # Select employer and individual plans
+            self._select_employer_individual_plans()
+
+            # Select specialty
             self._select_specialty(specialty)
 
             # Enter location and search radius
@@ -80,6 +86,64 @@ class UHCProviderScraper(BaseScraper):
             logger.error(f"Error scraping UHC providers: {str(e)}")
             return []
 
+    def _search_as_guest(self) -> None:
+        """Select the 'Search as Guest' option on the UHC website."""
+        try:
+            guest_button = self.wait.until(
+                EC.element_to_be_clickable(
+                    (By.XPATH, "//button[contains(text(), 'Search as a guest')]")
+                )
+            )
+            guest_button.click()
+            self.wait.until(EC.presence_of_element_located((By.ID, "search-location")))
+            logger.info("Selected 'Search as Guest' option")
+        except TimeoutException:
+            logger.error("Timeout waiting for 'Search as Guest' button")
+            raise
+        except Exception as e:
+            logger.error(f"Error selecting 'Search as Guest' option: {str(e)}")
+            raise
+
+    def _select_behavioral_health_directory(self) -> None:
+        """Select the 'Behavioral Health Directory' option on the UHC website."""
+        try:
+            behavioral_health_button = self.wait.until(
+                EC.element_to_be_clickable(
+                    (By.XPATH, "//a[contains(text(), 'Behavioral Health Directory')]")
+                )
+            )
+            behavioral_health_button.click()
+            self.wait.until(EC.presence_of_element_located((By.ID, "search-location")))
+            logger.info("Selected 'Behavioral Health Directory' option")
+        except TimeoutException:
+            logger.error("Timeout waiting for 'Behavioral Health Directory' button")
+            raise
+        except Exception as e:
+            logger.error(
+                f"Error selecting 'Behavioral Health Directory' option: {str(e)}"
+            )
+            raise
+
+    def _select_employer_individual_plans(self) -> None:
+        """Select the 'Employer and Individual Plans' option on the UHC website."""
+        try:
+            plans_button = self.wait.until(
+                EC.element_to_be_clickable(
+                    (By.XPATH, "//a[contains(text(), 'Employer and Individual Plans')]")
+                )
+            )
+            plans_button.click()
+            self.wait.until(EC.presence_of_element_located((By.ID, "search-location")))
+            logger.info("Selected 'Employer and Individual Plans' option")
+        except TimeoutException:
+            logger.error("Timeout waiting for 'Employer and Individual Plans' button")
+            raise
+        except Exception as e:
+            logger.error(
+                f"Error selecting 'Employer and Individual Plans' option: {str(e)}"
+            )
+            raise
+
     def _select_specialty(self, specialty: str) -> None:
         """
         Select the appropriate specialty in the search form.
@@ -88,39 +152,22 @@ class UHCProviderScraper(BaseScraper):
             specialty (str): Provider specialty to search for
         """
         try:
-            # Click on "Medical Professional" search option
-            professional_btn = self.wait.until(
-                EC.element_to_be_clickable(
-                    (By.XPATH, "//button[contains(text(), 'Medical Professional')]")
-                )
-            )
-            professional_btn.click()
-
-            # Wait for specialty selector to be visible
-            specialty_input = self.wait.until(
-                EC.element_to_be_clickable((By.ID, "providertypeahead"))
-            )
-
-            # Map the generic specialty to UHC-specific terms
             specialty_mapping = {
-                "mental_health": "Mental Health",
+                "mental_health": "Therapist",
                 "psychiatry": "Psychiatrist",
                 "psychology": "Psychologist",
                 "therapy": "Therapist",
             }
-
-            search_term = specialty_mapping.get(specialty, "Mental Health")
-
-            # Enter the specialty
+            search_term = specialty_mapping.get(specialty, "Therapist")
+            specialty_input = self.wait.until(
+                EC.element_to_be_clickable((By.ID, "search-term"))
+            )
+            specialty_input.clear()
             specialty_input.send_keys(search_term)
-            time.sleep(2)  # Allow dropdown to populate
-
-            # Select the first option in the dropdown
+            time.sleep(1)
             specialty_input.send_keys(Keys.DOWN)
             specialty_input.send_keys(Keys.ENTER)
-
             logger.info(f"Selected specialty: {search_term}")
-
         except TimeoutException:
             logger.error("Timeout while selecting specialty")
             raise
@@ -137,41 +184,29 @@ class UHCProviderScraper(BaseScraper):
             radius (int): Search radius in miles
         """
         try:
-            # Enter ZIP code
             location_input = self.wait.until(
-                EC.element_to_be_clickable((By.ID, "location-typeahead"))
+                EC.element_to_be_clickable((By.ID, "search-location"))
             )
             location_input.clear()
             location_input.send_keys(zip_code)
             time.sleep(1)
             location_input.send_keys(Keys.ENTER)
-
-            # Select radius if available
             try:
                 radius_select = self.wait.until(
-                    EC.element_to_be_clickable(
-                        (By.XPATH, "//select[contains(@id, 'radius')]")
-                    )
+                    EC.element_to_be_clickable((By.ID, "search-radius"))
                 )
-                # Find the closest available radius option
                 available_radius = [5, 10, 15, 25, 50, 100]
                 closest_radius = min(available_radius, key=lambda x: abs(x - radius))
-
                 radius_select.click()
                 radius_option = self.wait.until(
                     EC.element_to_be_clickable(
-                        (
-                            By.XPATH,
-                            f"//select[contains(@id, 'radius')]/option[@value='{closest_radius}']",
-                        )
+                        (By.XPATH, f"//option[@value='{closest_radius}']")
                     )
                 )
                 radius_option.click()
                 logger.info(f"Selected search radius: {closest_radius} miles")
             except (TimeoutException, NoSuchElementException):
                 logger.warning("Could not set radius, using default")
-
-            # Click search button
             search_button = self.wait.until(
                 EC.element_to_be_clickable(
                     (
@@ -181,14 +216,11 @@ class UHCProviderScraper(BaseScraper):
                 )
             )
             search_button.click()
-
-            # Wait for results to load
             self.wait.until(
                 EC.presence_of_element_located(
                     (By.CSS_SELECTOR, ".provider-info, .no-results-message")
                 )
             )
-
         except TimeoutException:
             logger.error("Timeout while entering location")
             raise
@@ -204,17 +236,13 @@ class UHCProviderScraper(BaseScraper):
             List[Dict[str, Any]]: List of provider data dictionaries
         """
         providers: List[Dict[str, Any]] = []
-
         try:
-            # Check if there are any results
             no_results = self.driver.find_elements(
                 By.CSS_SELECTOR, ".no-results-message"
             )
             if no_results:
                 logger.info("No providers found matching search criteria")
                 return providers
-
-            # Determine the number of pages (if pagination exists)
             total_pages = 1
             pagination = self.driver.find_elements(
                 By.CSS_SELECTOR, ".pagination-container"
@@ -228,33 +256,23 @@ class UHCProviderScraper(BaseScraper):
                         total_pages = int(page_elements[-2].text)
                     except ValueError:
                         total_pages = 1
-
             logger.info(f"Found {total_pages} pages of results")
-
-            # Process each page
             current_page = 1
             while current_page <= total_pages:
                 logger.info(f"Processing page {current_page} of {total_pages}")
-
-                # Extract providers on the current page
                 provider_elements = self.driver.find_elements(
                     By.CSS_SELECTOR, ".provider-info"
                 )
-
                 for element in provider_elements:
                     provider_data = self._extract_provider_data(element)
                     if provider_data:
                         providers.append(provider_data)
-
-                # Go to next page if available
                 if current_page < total_pages:
                     try:
                         next_button = self.driver.find_element(
                             By.CSS_SELECTOR, ".pagination-container li:last-child a"
                         )
                         next_button.click()
-
-                        # Wait for the next page to load
                         time.sleep(2)
                         self.wait.until(EC.staleness_of(provider_elements[0]))
                         self.wait.until(
@@ -269,16 +287,13 @@ class UHCProviderScraper(BaseScraper):
                     ) as e:
                         logger.error(f"Error navigating to next page: {str(e)}")
                         break
-
                 current_page += 1
-
         except Exception as e:
             logger.error(f"Error extracting providers: {str(e)}")
-
         logger.info(f"Extracted data for {len(providers)} providers")
         return providers
 
-    def _extract_provider_data(self, provider_element) -> Dict[str, Any]:
+    def _extract_provider_data(self, provider_element: Any) -> Dict[str, Any]:
         """
         Extract data for a single provider from the provider element.
 
@@ -289,7 +304,6 @@ class UHCProviderScraper(BaseScraper):
             Dict[str, Any]: Provider data dictionary
         """
         try:
-            # Initialize provider data dictionary
             provider_data = {
                 "provider_id": "",
                 "provider_name": "",
@@ -304,56 +318,39 @@ class UHCProviderScraper(BaseScraper):
                 "network": "UHC",
                 "url": self.driver.current_url,
             }
-
-            # Extract name
             name_element = provider_element.find_elements(By.CSS_SELECTOR, "h2")
             if name_element:
                 provider_data["provider_name"] = name_element[0].text.strip()
-
-            # Extract address
             address_elements = provider_element.find_elements(
                 By.CSS_SELECTOR, ".address-container .address"
             )
             if address_elements:
                 full_address = address_elements[0].text.strip()
                 address_parts = full_address.split("\n")
-
                 if len(address_parts) >= 2:
                     provider_data["address"] = address_parts[0].strip()
-
-                    # Parse city, state, zip from the second line
                     location_parts = address_parts[1].split(",")
                     if len(location_parts) >= 2:
                         provider_data["city"] = location_parts[0].strip()
-
-                        # Parse state and zip code
                         state_zip = location_parts[1].strip().split(" ")
                         if len(state_zip) >= 2:
                             provider_data["state"] = state_zip[0].strip()
                             provider_data["zip_code"] = state_zip[1].strip()
-
-            # Extract phone number
             phone_elements = provider_element.find_elements(
                 By.CSS_SELECTOR, ".phone-number"
             )
             if phone_elements:
                 provider_data["phone"] = phone_elements[0].text.strip()
-
-            # Extract practice name
             practice_elements = provider_element.find_elements(
                 By.CSS_SELECTOR, ".facility-name"
             )
             if practice_elements:
                 provider_data["practice_name"] = practice_elements[0].text.strip()
-
-            # Extract specialties
             specialty_elements = provider_element.find_elements(
                 By.CSS_SELECTOR, ".specialty-list"
             )
             if specialty_elements:
                 provider_data["specialties"] = specialty_elements[0].text.strip()
-
-            # Extract accepting new patients status
             accepting_elements = provider_element.find_elements(
                 By.XPATH, ".//*[contains(text(), 'Accepting new patients:')]"
             )
@@ -362,9 +359,7 @@ class UHCProviderScraper(BaseScraper):
                 provider_data["accepting_new_patients"] = (
                     "Yes" if "Yes" in status_text else "No"
                 )
-
             return provider_data
-
         except Exception as e:
             logger.error(f"Error extracting provider data: {str(e)}")
             return {}

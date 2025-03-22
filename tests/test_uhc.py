@@ -19,6 +19,12 @@ class TestUHCProviderScraper(unittest.TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]["name"], "Provider1")
 
+    def test_scrape_94110(self) -> None:
+        scraper = UHCProviderScraper(headless=True)
+        result = scraper.scrape("94110", 25, "mental_health")
+        self.assertGreater(len(result), 0)
+        self.assertIn("name", result[0])
+
 
 if __name__ == "__main__":
     unittest.main()

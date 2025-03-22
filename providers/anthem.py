@@ -364,7 +364,7 @@ class AnthemProviderScraper(BaseScraper):
         logger.info(f"Extracted data for {len(providers)} providers")
         return providers
 
-    def _extract_provider_data(self, card) -> Dict[str, Any]:
+    def _extract_provider_data(self, provider_element: Any) -> Dict[str, Any]:
         """
         Extract data for a single provider from the provider card.
 
@@ -392,17 +392,17 @@ class AnthemProviderScraper(BaseScraper):
             }
 
             # Extract provider name
-            name_elements = card.find_elements(By.CSS_SELECTOR, ".provider-name")
+            name_elements = provider_element.find_elements(By.CSS_SELECTOR, ".provider-name")
             if name_elements:
                 provider_data["provider_name"] = name_elements[0].text.strip()
 
             # Extract specialty
-            specialty_elements = card.find_elements(By.CSS_SELECTOR, ".specialty")
+            specialty_elements = provider_element.find_elements(By.CSS_SELECTOR, ".specialty")
             if specialty_elements:
                 provider_data["specialties"] = specialty_elements[0].text.strip()
 
             # Extract address
-            address_elements = card.find_elements(By.CSS_SELECTOR, ".address")
+            address_elements = provider_element.find_elements(By.CSS_SELECTOR, ".address")
             if address_elements:
                 address_text = address_elements[0].text.strip()
                 address_parts = address_text.split("\n")
@@ -420,17 +420,17 @@ class AnthemProviderScraper(BaseScraper):
                         provider_data["zip_code"] = location_match.group(3).strip()
 
             # Extract phone number
-            phone_elements = card.find_elements(By.CSS_SELECTOR, ".phone")
+            phone_elements = provider_element.find_elements(By.CSS_SELECTOR, ".phone")
             if phone_elements:
                 provider_data["phone"] = phone_elements[0].text.strip()
 
             # Extract practice/facility name
-            practice_elements = card.find_elements(By.CSS_SELECTOR, ".facility-name")
+            practice_elements = provider_element.find_elements(By.CSS_SELECTOR, ".facility-name")
             if practice_elements:
                 provider_data["practice_name"] = practice_elements[0].text.strip()
 
             # Extract accepting new patients status
-            accepting_elements = card.find_elements(
+            accepting_elements = provider_element.find_elements(
                 By.XPATH, ".//*[contains(text(), 'Accepting new patients')]"
             )
             if accepting_elements:
@@ -440,7 +440,7 @@ class AnthemProviderScraper(BaseScraper):
                 )
 
             # Extract provider ID if available
-            provider_id_elements = card.find_elements(By.CSS_SELECTOR, ".provider-id")
+            provider_id_elements = provider_element.find_elements(By.CSS_SELECTOR, ".provider-id")
             if provider_id_elements:
                 id_text = provider_id_elements[0].text.strip()
                 id_match = re.search(r"ID:\s*(\w+)", id_text)
