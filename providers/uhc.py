@@ -14,6 +14,7 @@ from selenium.common.exceptions import (
     NoSuchElementException,
     ElementClickInterceptedException,
 )
+from webdriver_manager.chrome import ChromeDriverManager
 
 from utils.base_scraper import BaseScraper
 
@@ -32,6 +33,7 @@ class UHCProviderScraper(BaseScraper):
         super().__init__(headless)
         self.base_url = "https://www.uhc.com/find-a-doctor"
         self.output_dir = f"data/{self.provider_name}"
+        self.driver = webdriver.Chrome(ChromeDriverManager().install(), options=self.options)
 
     def scrape(
         self, zip_code: str, radius: int = 25, specialty: str = "mental_health"

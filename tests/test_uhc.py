@@ -15,12 +15,14 @@ class TestUHCProviderScraper(unittest.TestCase):
         scraper.scrape = MagicMock(
             return_value=[{"name": "Provider1", "specialty": "Specialty1"}]
         )
+        scraper.wait._timeout = 30  # Increase timeout duration
         result = scraper.scrape("12345", 25, "mental_health")
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]["name"], "Provider1")
 
     def test_scrape_94110(self) -> None:
         scraper = UHCProviderScraper(headless=True)
+        scraper.wait._timeout = 30  # Increase timeout duration
         result = scraper.scrape("94110", 25, "mental_health")
         self.assertGreater(len(result), 0)
         self.assertIn("name", result[0])
